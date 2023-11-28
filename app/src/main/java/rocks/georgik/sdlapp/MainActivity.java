@@ -440,7 +440,7 @@ public class MainActivity extends Activity {
     public static native String nativeGetHint(String name);
 
     public static String getStorageDirectory() {
-        return Environment.getExternalStorageDirectory().getAbsolutePath();
+        return mSingleton.getExternalFilesDir(null).getAbsolutePath();
     }
 
     /**
