@@ -77,7 +77,7 @@ JNIEXPORT int JNICALL Java_rocks_georgik_sdlapp_MainActivity_nativeInit(JNIEnv* 
     }
     SDL_stack_free(argv);
     /* Do not issue an exit or the whole application will terminate instead of just the SDL thread */
-    /* exit(status); */
+    exit(status);
 
     return status;
 }
