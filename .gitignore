@@ -1,0 +1,6 @@
+.DS_Store
+CMakeFiles
+*~
+.cxx
+app/src/main/assets/data
+app/build
