@@ -432,6 +432,7 @@ set(SRC_FILES
   ${SRC}/app/commands/cmd_background_from_layer.cpp
   ${SRC}/app/commands/cmd_layer_visibility.cpp
   ${SRC}/app/commands/cmd_alternate_timeline.cpp
+  ${SRC}/app/commands/cmd_alternate_toolbar.cpp
   ${SRC}/app/commands/cmd_new_layer.cpp
   ${SRC}/app/commands/cmd_duplicate_view.cpp
   ${SRC}/app/commands/cmd_open_file.cpp
