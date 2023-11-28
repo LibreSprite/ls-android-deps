@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4.1)
-project(pixman)
+project(pixman C ASM)
 
 file(GENERATE
         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/pixman-config.h"
@@ -66,24 +66,29 @@ set(PIXMAN_CFLAGS
         "-I${CMAKE_CURRENT_BINARY_DIR}")
 
 if("${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "arm64-v8a")
-    # set(PIXMAN_SRC ${PIXMAN_SRC}
-    #         "pixman/pixman-arm-neon.c"
-    #         "pixman/pixman-arma64-neon-asm.S"
-    #         "pixman/pixman-arma64-neon-asm-bilinear.S")
+    set(PIXMAN_SRC ${PIXMAN_SRC}
+            "pixman/pixman-arm-neon.c"
+            "pixman/pixman-arma64-neon-asm.S"
+            "pixman/pixman-arma64-neon-asm-bilinear.S")
     set(PIXMAN_CFLAGS ${PIXMAN_CFLAGS}
-      # "-DUSE_ARM_A64_NEON=1"
-      "-DSIZEOF_LONG=8")# "-fno-integrated-as" "-B" "/usr/aarch64-linux-gnu/bin")
+      "-DUSE_ARM_A64_NEON=1"
+      "-DSIZEOF_LONG=8")
 endif()
 
 if("${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "armeabi-v7a")
-    # set(PIXMAN_SRC ${PIXMAN_SRC}
-    #         "pixman/pixman-arm-neon.c"
-    #         "pixman/pixman-arm-neon-asm.S"
-    #         "pixman/pixman-arm-neon-asm-bilinear.S"
-    #         "pixman/pixman-arm-simd-asm.S"
-    #         "pixman/pixman-arm-simd-asm-scaled.S")
-    set(PIXMAN_CFLAGS ${PIXMAN_CFLAGS} #"-DUSE_ARM_SIMD=1" "-DUSE_ARM_NEON=1"
-            "-DSIZEOF_LONG=4") # "-fno-integrated-as" "-B" "/usr/arm-linux-gnueabihf/bin")
+  set(CPUFEATURESPATH "${CMAKE_ANDROID_NDK}/sources/android/cpufeatures/")
+  set(PIXMAN_SRC ${PIXMAN_SRC}
+            "$CPUFEATURESPATH/cpu-features.c"
+            "pixman/pixman-arm-neon.c"
+            "pixman/pixman-arm-neon-asm.S"
+            "pixman/pixman-arm-neon-asm-bilinear.S"
+            "pixman/pixman-arm-simd-asm.S"
+            "pixman/pixman-arm-simd-asm-scaled.S")
+    set(PIXMAN_CFLAGS ${PIXMAN_CFLAGS}
+            "-I${CPUFEATURESPATH}"
+            "-DUSE_ARM_SIMD=1"
+            "-DUSE_ARM_NEON=1"
+            "-DSIZEOF_LONG=4")
 endif()
 
 if ("${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "x86" OR "${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "x86_64")
