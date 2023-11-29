@@ -1083,6 +1083,10 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         setOnKeyListener(this);
         setOnTouchListener(this);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            setPointerIcon(PointerIcon.getSystemIcon(context, PointerIcon.TYPE_NULL));
+        }
+
         mDisplay = ((WindowManager)context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
         mSensorManager = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
 
