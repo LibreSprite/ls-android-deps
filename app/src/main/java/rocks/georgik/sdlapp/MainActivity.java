@@ -167,19 +167,13 @@ public class MainActivity extends Activity {
         // Set up the surface
         mSurface = new SDLSurface(getApplication());
 
-        setFullscreen();
-
-        if(Build.VERSION.SDK_INT >= 12) {
-            mJoystickHandler = new SDLJoystickHandler_API12();
-        }
-        else {
-            mJoystickHandler = new SDLJoystickHandler();
-        }
+        mJoystickHandler = new SDLJoystickHandler();
 
         mLayout = new RelativeLayout(this);
         mLayout.addView(mSurface);
 
         setContentView(mLayout);
+        setFullscreen();
         
         // Get filename from "Open with" of another application
         Intent intent = getIntent();
@@ -191,6 +185,19 @@ public class MainActivity extends Activity {
                 MainActivity.onNativeDropFile(filename);
             }
         }
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(MotionEvent ev) {
+        if (ev.getSource() == InputDevice.SOURCE_MOUSE && ev.getAction() == MotionEvent.ACTION_SCROLL) {
+            onNativeMouse(0,
+                    MotionEvent.ACTION_SCROLL,
+                    ev.getAxisValue(MotionEvent.AXIS_HSCROLL, 0),
+                    ev.getAxisValue(MotionEvent.AXIS_VSCROLL, 0)
+            );
+            return true;
+        }
+        return super.dispatchGenericMotionEvent(ev);
     }
 
     void setFullscreen() {
@@ -1063,7 +1070,7 @@ class SDLMain implements Runnable {
     Because of this, that's where we set up the SDL thread
 */
 class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
-    View.OnKeyListener, View.OnTouchListener, SensorEventListener  {
+    View.OnKeyListener, View.OnTouchListener, SensorEventListener, View.OnGenericMotionListener {
 
     // Sensors
     protected static SensorManager mSensorManager;
@@ -1082,6 +1089,7 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         requestFocus();
         setOnKeyListener(this);
         setOnTouchListener(this);
+        setOnGenericMotionListener(this);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             setPointerIcon(PointerIcon.getSystemIcon(context, PointerIcon.TYPE_NULL));
@@ -1089,10 +1097,6 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
 
         mDisplay = ((WindowManager)context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
         mSensorManager = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
-
-        if(Build.VERSION.SDK_INT >= 12) {
-            setOnGenericMotionListener(new SDLGenericMotionListener_API12());
-        }
 
         // Some arbitrary defaults to avoid a potential division by zero
         mWidth = 1.0f;
@@ -1109,6 +1113,7 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         requestFocus();
         setOnKeyListener(this);
         setOnTouchListener(this);
+        setOnGenericMotionListener(this);
         enableSensor(Sensor.TYPE_ACCELEROMETER, true);
     }
 
@@ -1138,7 +1143,6 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
     public void surfaceChanged(SurfaceHolder holder,
                                int format, int width, int height) {
         Log.v("SDL", "surfaceChanged()");
-
         int sdlFormat = 0x15151002; // SDL_PIXELFORMAT_RGB565 by default
         switch (format) {
         case PixelFormat.A_8:
@@ -1315,58 +1319,64 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         return false;
     }
 
+    // Generic Motion (mouse hover, joystick...) events go here
+    @Override
+    public boolean onGenericMotion(View v, MotionEvent event) {
+        float x, y;
+        int action;
+
+        switch ( event.getSource() ) {
+            case InputDevice.SOURCE_JOYSTICK:
+            case InputDevice.SOURCE_GAMEPAD:
+            case InputDevice.SOURCE_DPAD:
+                return MainActivity.handleJoystickMotionEvent(event);
+
+            case InputDevice.SOURCE_MOUSE:
+                action = event.getActionMasked();
+                switch (action) {
+                    case MotionEvent.ACTION_HOVER_MOVE:
+                        x = event.getX(0);
+                        y = event.getY(0);
+                        MainActivity.onNativeMouse(0, action, x, y);
+                        return true;
+                    default:
+                        break;
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        // Event was not managed
+        return false;
+    }
+
     // Touch events
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         /* Ref: http://developer.android.com/training/gestures/multi.html */
         final int touchDevId = event.getDeviceId();
-        final int pointerCount = event.getPointerCount();
+        final int pointerCount = Math.min(1, event.getPointerCount());
         int action = event.getActionMasked();
         int pointerFingerId;
         int mouseButton;
         int i = -1;
         float x,y,p;
 
-        // !!! FIXME: dump this SDK check after 2.0.4 ships and require API14.
-        if (event.getSource() == InputDevice.SOURCE_MOUSE && MainActivity.mSeparateMouseAndTouch) {
-            if (Build.VERSION.SDK_INT < 14) {
-                mouseButton = 1; // all mouse buttons are the left button
-            } else {
-                try {
-                    mouseButton = (Integer) event.getClass().getMethod("getButtonState").invoke(event);
-                } catch(Exception e) {
-                    mouseButton = 1;    // oh well.
-                }
+        if (event.getSource() == InputDevice.SOURCE_MOUSE) {
+            try {
+                mouseButton = event.getButtonState();
+            } catch (Exception e) {
+                mouseButton = 1;    // oh well.
             }
             MainActivity.onNativeMouse(mouseButton, action, event.getX(0), event.getY(0));
-        } else {
-            switch(action) {
-                case MotionEvent.ACTION_MOVE:
-                    for (i = 0; i < pointerCount; i++) {
-                        pointerFingerId = event.getPointerId(i);
-                        x = event.getX(i) / mWidth;
-                        y = event.getY(i) / mHeight;
-                        p = event.getPressure(i);
-                        if (p > 1.0f) {
-                            // may be larger than 1.0f on some devices
-                            // see the documentation of getPressure(i)
-                            p = 1.0f;
-                        }
-                        MainActivity.onNativeTouch(touchDevId, pointerFingerId, action, x, y, p);
-                    }
-                    break;
+            return true;
+        }
 
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_DOWN:
-                    // Primary pointer up/down, the index is always zero
-                    i = 0;
-                case MotionEvent.ACTION_POINTER_UP:
-                case MotionEvent.ACTION_POINTER_DOWN:
-                    // Non primary pointer up/down
-                    if (i == -1) {
-                        i = event.getActionIndex();
-                    }
-
+        switch(action) {
+            case MotionEvent.ACTION_MOVE:
+                for (i = 0; i < pointerCount; i++) {
                     pointerFingerId = event.getPointerId(i);
                     x = event.getX(i) / mWidth;
                     y = event.getY(i) / mHeight;
@@ -1377,26 +1387,49 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
                         p = 1.0f;
                     }
                     MainActivity.onNativeTouch(touchDevId, pointerFingerId, action, x, y, p);
-                    break;
+                }
+                break;
 
-                case MotionEvent.ACTION_CANCEL:
-                    for (i = 0; i < pointerCount; i++) {
-                        pointerFingerId = event.getPointerId(i);
-                        x = event.getX(i) / mWidth;
-                        y = event.getY(i) / mHeight;
-                        p = event.getPressure(i);
-                        if (p > 1.0f) {
-                            // may be larger than 1.0f on some devices
-                            // see the documentation of getPressure(i)
-                            p = 1.0f;
-                        }
-                        MainActivity.onNativeTouch(touchDevId, pointerFingerId, MotionEvent.ACTION_UP, x, y, p);
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_DOWN:
+                // Primary pointer up/down, the index is always zero
+                i = 0;
+            case MotionEvent.ACTION_POINTER_UP:
+            case MotionEvent.ACTION_POINTER_DOWN:
+                // Non primary pointer up/down
+                if (i == -1) {
+                    i = event.getActionIndex();
+                }
+
+                pointerFingerId = event.getPointerId(i);
+                x = event.getX(i) / mWidth;
+                y = event.getY(i) / mHeight;
+                p = event.getPressure(i);
+                if (p > 1.0f) {
+                    // may be larger than 1.0f on some devices
+                    // see the documentation of getPressure(i)
+                    p = 1.0f;
+                }
+                MainActivity.onNativeTouch(touchDevId, pointerFingerId, action, x, y, p);
+                break;
+
+            case MotionEvent.ACTION_CANCEL:
+                for (i = 0; i < pointerCount; i++) {
+                    pointerFingerId = event.getPointerId(i);
+                    x = event.getX(i) / mWidth;
+                    y = event.getY(i) / mHeight;
+                    p = event.getPressure(i);
+                    if (p > 1.0f) {
+                        // may be larger than 1.0f on some devices
+                        // see the documentation of getPressure(i)
+                        p = 1.0f;
                     }
-                    break;
+                    MainActivity.onNativeTouch(touchDevId, pointerFingerId, MotionEvent.ACTION_UP, x, y, p);
+                }
+                break;
 
-                default:
-                    break;
-            }
+            default:
+                break;
         }
 
         return true;
@@ -1582,26 +1615,6 @@ class SDLInputConnection extends BaseInputConnection {
 
 /* A null joystick handler for API level < 12 devices (the accelerometer is handled separately) */
 class SDLJoystickHandler {
-
-    /**
-     * Handles given MotionEvent.
-     * @param event the event to be handled.
-     * @return if given event was processed.
-     */
-    public boolean handleMotionEvent(MotionEvent event) {
-        return false;
-    }
-
-    /**
-     * Handles adding and removing of input devices.
-     */
-    public void pollInputDevices() {
-    }
-}
-
-/* Actual joystick functionality available for API >= 12 devices */
-class SDLJoystickHandler_API12 extends SDLJoystickHandler {
-
     static class SDLJoystick {
         public int device_id;
         public String name;
@@ -1617,12 +1630,10 @@ class SDLJoystickHandler_API12 extends SDLJoystickHandler {
 
     private ArrayList<SDLJoystick> mJoysticks;
 
-    public SDLJoystickHandler_API12() {
-
+    public SDLJoystickHandler() {
         mJoysticks = new ArrayList<SDLJoystick>();
     }
 
-    @Override
     public void pollInputDevices() {
         int[] deviceIds = InputDevice.getDeviceIds();
         // It helps processing the device ids in reverse order
@@ -1696,7 +1707,6 @@ class SDLJoystickHandler_API12 extends SDLJoystickHandler {
         return null;
     }
 
-    @Override
     public boolean handleMotionEvent(MotionEvent event) {
         if ((event.getSource() & InputDevice.SOURCE_JOYSTICK) != 0) {
             int actionPointerIndex = event.getActionIndex();
@@ -1726,45 +1736,3 @@ class SDLJoystickHandler_API12 extends SDLJoystickHandler {
     }
 }
 
-class SDLGenericMotionListener_API12 implements View.OnGenericMotionListener {
-    // Generic Motion (mouse hover, joystick...) events go here
-    @Override
-    public boolean onGenericMotion(View v, MotionEvent event) {
-        float x, y;
-        int action;
-
-        switch ( event.getSource() ) {
-            case InputDevice.SOURCE_JOYSTICK:
-            case InputDevice.SOURCE_GAMEPAD:
-            case InputDevice.SOURCE_DPAD:
-                return MainActivity.handleJoystickMotionEvent(event);
-
-            case InputDevice.SOURCE_MOUSE:
-                action = event.getActionMasked();
-                switch (action) {
-                    case MotionEvent.ACTION_SCROLL:
-                        x = event.getAxisValue(MotionEvent.AXIS_HSCROLL, 0);
-                        y = event.getAxisValue(MotionEvent.AXIS_VSCROLL, 0);
-                        MainActivity.onNativeMouse(0, action, x, y);
-                        return true;
-
-                    case MotionEvent.ACTION_HOVER_MOVE:
-                        x = event.getX(0);
-                        y = event.getY(0);
-
-                        MainActivity.onNativeMouse(0, action, x, y);
-                        return true;
-
-                    default:
-                        break;
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        // Event was not managed
-        return false;
-    }
-}
