@@ -42,6 +42,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_image/ ${CMAKE_CURRENT_SOUR
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../giflib/ ${CMAKE_CURRENT_SOURCE_DIR}/../giflib/)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/ ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml2 ${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml2/)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../pixman/ ${CMAKE_CURRENT_SOURCE_DIR}/../pixman/)
@@ -67,6 +68,7 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/../freetype/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_png/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_jpeg/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../giflib/
 )
 
 set(SRC_FILES
@@ -298,7 +300,7 @@ set(SRC_FILES
   ${SRC}/app/util/clipboard.cpp
   ${SRC}/app/util/pic_file.cpp
   ${SRC}/app/widget_loader.cpp
-  # ${SRC}/app/file/gif_format.cpp
+  ${SRC}/app/file/gif_format.cpp
   ${SRC}/app/file/palette_file.cpp
   ${SRC}/app/file/file_format.cpp
   # ${SRC}/app/file/webp_format.cpp
@@ -720,6 +722,7 @@ target_link_libraries( # Specifies the target library.
                         SDL2_gfx
                         SDL2_mixer
                         SDL2_ttf
+                        giflib
                         tinyxml2
                         ${curl}
                         ${log-lib}
