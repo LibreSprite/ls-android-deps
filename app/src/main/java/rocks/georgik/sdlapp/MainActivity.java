@@ -1,5 +1,6 @@
 package rocks.georgik.sdlapp;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.lang.reflect.Method;
 import android.app.*;
 import android.content.*;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.text.InputType;
 import android.view.*;
 import android.view.inputmethod.BaseInputConnection;
@@ -30,6 +32,7 @@ import android.graphics.drawable.Drawable;
 import android.media.*;
 import android.hardware.*;
 import android.content.pm.ActivityInfo;
+import androidx.core.content.FileProvider;
 
 /**
     SDL Activity
@@ -465,6 +468,24 @@ public class MainActivity extends Activity {
                                                int naxes, int nhats, int nballs);
     public static native int nativeRemoveJoystick(int device_id);
     public static native String nativeGetHint(String name);
+
+    public static void shareFile(String path) {
+        File file = new File(path);
+        int dot = path.lastIndexOf('.');
+        String extension = path.substring(dot + 1).toLowerCase();
+
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("image/" + extension);
+        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        Uri uri = FileProvider.getUriForFile(
+                mSingleton,
+                "io.github.libresprite.fileprovider",
+                file);
+        shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+
+        mSingleton.startActivity(Intent.createChooser(shareIntent, "Share using..."));
+    }
 
     public static String getStorageDirectory() {
         return mSingleton.getExternalFilesDir(null).getAbsolutePath();

@@ -12,6 +12,17 @@
 std::string _AndroidDataDir = "./";
 std::string _AndroidStorageDir = "/sdcard/";
 
+extern "C" JNIEnv* Android_JNI_GetEnv(void);
+extern "C" jclass Android_JNI_GetActivityClass(void);
+
+void _AndroidShareFile(const std::string& path) {
+    jclass cls = Android_JNI_GetActivityClass();
+    JNIEnv *env = Android_JNI_GetEnv();
+    jstring jpath = env->NewStringUTF(path.c_str());
+    jmethodID shareFile = env->GetStaticMethodID(cls, "shareFile", "(Ljava/lang/String;)V");
+    env->CallStaticVoidMethod(cls, shareFile, jpath);
+}
+
 extern "C" void extractAssets(JNIEnv* env, jclass cls) {
     std::queue<std::string> queue;
     queue.push("");

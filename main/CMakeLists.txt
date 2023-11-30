@@ -407,6 +407,7 @@ set(SRC_FILES
   ${SRC}/app/commands/cmd_save_palette.cpp
   ${SRC}/app/commands/cmd_clear.cpp
   ${SRC}/app/commands/cmd_new_frame.cpp
+  ${SRC}/app/commands/cmd_share.cpp
   ${SRC}/app/commands/cmd_show.cpp
   ${SRC}/app/commands/cmd_pixel_perfect_mode.cpp
   ${SRC}/app/commands/cmd_invert_mask.cpp
