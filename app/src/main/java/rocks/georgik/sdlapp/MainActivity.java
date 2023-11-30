@@ -1,6 +1,7 @@
 package rocks.georgik.sdlapp;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -127,66 +128,117 @@ public class MainActivity extends Activity {
         Log.v(TAG, "onCreate(): " + mSingleton);
         super.onCreate(savedInstanceState);
 
-        MainActivity.initialize();
+        // Get filename from "Open with" of another application
+        Intent intent = getIntent();
+        if (mSingleton == null) {
+            boot();
+        }
+
+        if (Intent.ACTION_SEND.equals(intent.getAction())) {
+            try {
+                onDropFile(intent);
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         // So we can call stuff from static callbacks
         mSingleton = this;
+        // Set up the surface
+        mSurface = new SDLSurface(getApplication());
+        mJoystickHandler = new SDLJoystickHandler();
+        mLayout = new RelativeLayout(this);
+        mLayout.addView(mSurface);
+        setContentView(mLayout);
+        setFullscreen();
+    }
+
+    void onDropFile(Intent intent) throws Exception {
+        Uri uri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        if (uri == null) {
+            return;
+        }
+        String file = createFileFromInputStream(uri).getAbsolutePath();
+        MainActivity.onNativeDropFile(file);
+    }
+
+
+    public File createFileFromInputStream(Uri gifUri) {
+        InputStream inputStream = null;
+        FileOutputStream outputStream = null;
+
+        try {
+            ContentResolver contentResolver = getContentResolver();
+            inputStream = contentResolver.openInputStream(gifUri);
+
+            if (inputStream != null) {
+                // Create a temporary file
+                File tempFile = new File(getExternalFilesDir(null), (new File(gifUri.getPath())).getName());
+                outputStream = new FileOutputStream(tempFile);
+
+                // Read from the InputStream and write to the FileOutputStream
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+
+                return tempFile;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // Close streams in a finally block to ensure they are closed even if an exception occurs
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    void boot() {
+
+        MainActivity.initialize();
 
         // Load shared libraries
         String errorMsgBrokenLib = "";
         try {
             loadLibraries();
-        } catch(UnsatisfiedLinkError e) {
-            System.err.println(e.getMessage());
-            mBrokenLibraries = true;
-            errorMsgBrokenLib = e.getMessage();
-        } catch(Exception e) {
+        } catch (Exception e) {
             System.err.println(e.getMessage());
             mBrokenLibraries = true;
             errorMsgBrokenLib = e.getMessage();
         }
 
-        if (mBrokenLibraries)
-        {
-            AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
+        if (mBrokenLibraries) {
+            AlertDialog.Builder dlgAlert = new AlertDialog.Builder(this);
             dlgAlert.setMessage("An error occurred while trying to start the application. Please try again and/or reinstall."
-                  + System.getProperty("line.separator")
-                  + System.getProperty("line.separator")
-                  + "Error: " + errorMsgBrokenLib);
+                    + System.getProperty("line.separator")
+                    + System.getProperty("line.separator")
+                    + "Error: " + errorMsgBrokenLib);
             dlgAlert.setTitle("SDL Error");
             dlgAlert.setPositiveButton("Exit",
-                new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog,int id) {
+                    (dialog, id) -> {
                         // if this button is clicked, close current activity
                         MainActivity.mSingleton.finish();
-                    }
-                });
-           dlgAlert.setCancelable(false);
-           dlgAlert.create().show();
+                    });
+            dlgAlert.setCancelable(false);
+            dlgAlert.create().show();
 
-           return;
-        }
-
-        // Set up the surface
-        mSurface = new SDLSurface(getApplication());
-
-        mJoystickHandler = new SDLJoystickHandler();
-
-        mLayout = new RelativeLayout(this);
-        mLayout.addView(mSurface);
-
-        setContentView(mLayout);
-        setFullscreen();
-        
-        // Get filename from "Open with" of another application
-        Intent intent = getIntent();
-
-        if (intent != null && intent.getData() != null) {
-            String filename = intent.getData().getPath();
-            if (filename != null) {
-                Log.v(TAG, "Got filename: " + filename);
-                MainActivity.onNativeDropFile(filename);
-            }
+            return;
         }
     }
 
