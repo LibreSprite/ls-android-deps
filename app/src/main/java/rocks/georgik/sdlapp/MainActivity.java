@@ -163,17 +163,17 @@ public class MainActivity extends Activity {
     }
 
 
-    public File createFileFromInputStream(Uri gifUri) {
+    public File createFileFromInputStream(Uri uri) {
         InputStream inputStream = null;
         FileOutputStream outputStream = null;
 
         try {
             ContentResolver contentResolver = getContentResolver();
-            inputStream = contentResolver.openInputStream(gifUri);
+            inputStream = contentResolver.openInputStream(uri);
 
             if (inputStream != null) {
                 // Create a temporary file
-                File tempFile = new File(getExternalFilesDir(null), (new File(gifUri.getPath())).getName());
+                File tempFile = new File(getExternalFilesDir(null), (new File(uri.getPath())).getName());
                 outputStream = new FileOutputStream(tempFile);
 
                 // Read from the InputStream and write to the FileOutputStream
@@ -237,8 +237,6 @@ public class MainActivity extends Activity {
                     });
             dlgAlert.setCancelable(false);
             dlgAlert.create().show();
-
-            return;
         }
     }
 
