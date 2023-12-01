@@ -8,8 +8,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.lang.reflect.Method;
+import java.util.Queue;
 
 import android.app.*;
 import android.content.*;
@@ -1423,12 +1425,118 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         return false;
     }
 
+    class Touch {
+        int fingerId, deviceId;
+        float x, y, pressure;
+        int action;
+    }
+    Queue<Touch> touches = new LinkedList<>();
+
+    long beginTouchTime;
+    Handler touchHandler = new Handler();
+
+    void addTouch(MotionEvent event) {
+        Touch touch = new Touch();
+        touch.deviceId = event.getDeviceId();
+        touch.x = event.getX(0) / mWidth;
+        touch.y = event.getY(0) / mHeight;
+        touch.pressure = Math.min(1.0f, event.getPressure(0));
+        touch.fingerId = event.getPointerId(0);
+        touch.action = event.getAction();
+        touches.add(touch);
+    }
+
+    void beginTouch(MotionEvent event) {
+        beginTouchTime = System.currentTimeMillis();
+        touches.clear();
+        addTouch(event);
+        touchHandler.removeCallbacksAndMessages(null);
+        touchHandler.postDelayed(() -> {flushTouch();}, 30);
+    }
+
+    void flushTouch() {
+        if (!cancelTouch())
+            return;
+        while (!touches.isEmpty()) {
+            Touch touch = touches.remove();
+            MainActivity.onNativeTouch(touch.deviceId, touch.fingerId, touch.action, touch.x, touch.y, touch.pressure);
+        }
+    }
+
+    boolean cancelTouch() {
+        if (touchHandler == null || beginTouchTime == 0)
+            return false;
+        touchHandler.removeCallbacksAndMessages(null);
+        beginTouchTime = 0;
+        return true;
+    }
+
+    boolean dragging;
+    double startDragDistance;
+    float lastDragX, lastDragY;
+
+    void updateDragCenter(MotionEvent event) {
+        lastDragX = (event.getX(0) + event.getX(1)) / 2;
+        lastDragY = (event.getY(0) + event.getY(1)) / 2;
+    }
+
+    void stopDrag(MotionEvent event) {
+        if (!dragging)
+            return;
+        dragging = false;
+        MainActivity.onNativeMouse(4, MotionEvent.ACTION_UP, lastDragX, lastDragY);
+        MainActivity.onNativeMouse(0, MotionEvent.ACTION_MOVE, mWidth * 10, mHeight * 10);
+    }
+
+    void startDrag(MotionEvent event) {
+        if (dragging)
+            return;
+        dragging = true;
+        cancelTouch();
+        updateDragCenter(event);
+        MainActivity.onNativeMouse(4, MotionEvent.ACTION_DOWN, lastDragX, lastDragY);
+        float dx = event.getX(0) - event.getX(1);
+        float dy = event.getY(0) - event.getY(1);
+        startDragDistance = Math.sqrt(dx*dx + dy*dy);
+    }
+    void updateDrag(MotionEvent event) {
+        boolean enabled = event.getPointerCount() == 2;
+        if (enabled != dragging) {
+            if (!enabled) {
+                stopDrag(event);
+            } else {
+                startDrag(event);
+            }
+            return;
+        }
+        if (enabled) {
+            updateDragCenter(event);
+            MainActivity.onNativeMouse(4, MotionEvent.ACTION_MOVE, lastDragX, lastDragY);
+            if (startDragDistance > 0) {
+                float dx = event.getX(0) - event.getX(1);
+                float dy = event.getY(0) - event.getY(1);
+                double dragDistance = Math.sqrt(dx * dx + dy * dy);
+                double zoom = dragDistance / startDragDistance;
+                if (zoom < 1) zoom = 1 + (-1 / zoom);
+                else zoom--;
+                long direction = Math.round(zoom);
+                // Log.i("SCROLL", "Direction:" + direction + " zoom:" + zoom);
+                if (direction != 0) {
+                    startDragDistance = dragDistance;
+                    MainActivity.onNativeMouse(4, MotionEvent.ACTION_UP, lastDragX, lastDragY);
+                    MainActivity.onNativeMouse(0, MotionEvent.ACTION_SCROLL,0, direction);
+                    MainActivity.onNativeMouse(4, MotionEvent.ACTION_DOWN, lastDragX, lastDragY);
+                }
+            }
+        }
+    }
+
     // Touch events
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         /* Ref: http://developer.android.com/training/gestures/multi.html */
         final int touchDevId = event.getDeviceId();
-        final int pointerCount = Math.min(1, event.getPointerCount());
+        final int pointerCount = event.getPointerCount();
         int action = event.getActionMasked();
         int pointerFingerId;
         int mouseButton;
@@ -1436,6 +1544,8 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         float x,y,p;
 
         if (event.getSource() == InputDevice.SOURCE_MOUSE) {
+            stopDrag(event);
+            cancelTouch();
             try {
                 mouseButton = event.getButtonState();
             } catch (Exception e) {
@@ -1447,56 +1557,49 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
 
         switch(action) {
             case MotionEvent.ACTION_MOVE:
-                for (i = 0; i < pointerCount; i++) {
-                    pointerFingerId = event.getPointerId(i);
-                    x = event.getX(i) / mWidth;
-                    y = event.getY(i) / mHeight;
-                    p = event.getPressure(i);
-                    if (p > 1.0f) {
-                        // may be larger than 1.0f on some devices
-                        // see the documentation of getPressure(i)
-                        p = 1.0f;
+                if (pointerCount == 1) {
+                    if (beginTouchTime != 0) {
+                        addTouch(event);
+                        break;
                     }
+                    flushTouch();
+                    i = 0;
+                    pointerFingerId = event.getPointerId(i);
+                    x = event.getX() / mWidth;
+                    y = event.getY() / mHeight;
+                    p = Math.min(1.0f, event.getPressure());
                     MainActivity.onNativeTouch(touchDevId, pointerFingerId, action, x, y, p);
                 }
+                cancelTouch();
+                updateDrag(event);
+                break;
+
+            case MotionEvent.ACTION_DOWN:
+                beginTouch(event);
+                updateDrag(event);
                 break;
 
             case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_DOWN:
+                flushTouch();
+                updateDrag(event);
                 // Primary pointer up/down, the index is always zero
                 i = 0;
-            case MotionEvent.ACTION_POINTER_UP:
-            case MotionEvent.ACTION_POINTER_DOWN:
-                // Non primary pointer up/down
-                if (i == -1) {
-                    i = event.getActionIndex();
-                }
-
                 pointerFingerId = event.getPointerId(i);
                 x = event.getX(i) / mWidth;
                 y = event.getY(i) / mHeight;
-                p = event.getPressure(i);
-                if (p > 1.0f) {
-                    // may be larger than 1.0f on some devices
-                    // see the documentation of getPressure(i)
-                    p = 1.0f;
-                }
+                p = Math.min(1.0f, event.getPressure(i));
                 MainActivity.onNativeTouch(touchDevId, pointerFingerId, action, x, y, p);
                 break;
 
+
+            case MotionEvent.ACTION_POINTER_UP:
+            case MotionEvent.ACTION_POINTER_DOWN:
+                updateDrag(event);
+                break;
+
             case MotionEvent.ACTION_CANCEL:
-                for (i = 0; i < pointerCount; i++) {
-                    pointerFingerId = event.getPointerId(i);
-                    x = event.getX(i) / mWidth;
-                    y = event.getY(i) / mHeight;
-                    p = event.getPressure(i);
-                    if (p > 1.0f) {
-                        // may be larger than 1.0f on some devices
-                        // see the documentation of getPressure(i)
-                        p = 1.0f;
-                    }
-                    MainActivity.onNativeTouch(touchDevId, pointerFingerId, MotionEvent.ACTION_UP, x, y, p);
-                }
+                flushTouch();
+                updateDrag(event);
                 break;
 
             default:
