@@ -1489,7 +1489,7 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
     }
 
     void startDrag(MotionEvent event) {
-        if (dragging)
+        if (dragging || beginTouchTime == 0)
             return;
         dragging = true;
         cancelTouch();
