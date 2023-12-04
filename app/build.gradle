@@ -95,8 +95,6 @@ apply plugin: 'kotlin-android'
         externalNativeBuild {
             cmake {
                 path "../main/CMakeLists.txt"
-                //path "../SDL2/CMakeLists.txt"
-                version "3.24.1"
             }
         }
         namespace 'rocks.georgik.sdlapp'

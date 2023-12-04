@@ -76,19 +76,15 @@ if("${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "arm64-v8a")
 endif()
 
 if("${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "armeabi-v7a")
-  set(CPUFEATURESPATH "${CMAKE_ANDROID_NDK}/sources/android/cpufeatures/")
-  set(PIXMAN_SRC ${PIXMAN_SRC}
-            "$CPUFEATURESPATH/cpu-features.c"
-            "pixman/pixman-arm-neon.c"
-            "pixman/pixman-arm-neon-asm.S"
-            "pixman/pixman-arm-neon-asm-bilinear.S"
-            "pixman/pixman-arm-simd-asm.S"
-            "pixman/pixman-arm-simd-asm-scaled.S")
-    set(PIXMAN_CFLAGS ${PIXMAN_CFLAGS}
-            "-I${CPUFEATURESPATH}"
-            "-DUSE_ARM_SIMD=1"
-            "-DUSE_ARM_NEON=1"
-            "-DSIZEOF_LONG=4")
+  
+    # set(PIXMAN_SRC ${PIXMAN_SRC}
+    #         "pixman/pixman-arm-neon.c"
+    #         "pixman/pixman-arm-neon-asm.S"
+    #         "pixman/pixman-arm-neon-asm-bilinear.S"
+    #         "pixman/pixman-arm-simd-asm.S"
+    #         "pixman/pixman-arm-simd-asm-scaled.S")
+    set(PIXMAN_CFLAGS ${PIXMAN_CFLAGS} #"-DUSE_ARM_SIMD=1" "-DUSE_ARM_NEON=1"
+            "-DSIZEOF_LONG=4") # "-fno-integrated-as" "-B" "/usr/arm-linux-gnueabihf/bin")
 endif()
 
 if ("${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "x86" OR "${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "x86_64")
