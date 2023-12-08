@@ -136,7 +136,7 @@ public class MainActivity extends Activity {
             boot();
         }
 
-        if (Intent.ACTION_SEND.equals(intent.getAction())) {
+        if (Intent.ACTION_SEND.equals(intent.getAction()) || Intent.ACTION_VIEW.equals(intent.getAction())) {
             try {
                 onDropFile(intent);
             } catch(Exception e) {
