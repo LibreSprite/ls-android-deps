@@ -381,6 +381,7 @@ set(SRC_FILES
   ${SRC}/app/file/pcx_format.cpp
   ${SRC}/app/file/pixly_format.cpp
   ${SRC}/app/file/png_format.cpp
+  ${SRC}/app/file/she_format.cpp
   ${SRC}/app/file/split_filename.cpp
   ${SRC}/app/file/tga_format.cpp
   ${SRC}/app/file_selector.cpp
