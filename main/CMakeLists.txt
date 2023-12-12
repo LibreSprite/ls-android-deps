@@ -413,6 +413,7 @@ set(SRC_FILES
   ${SRC}/app/script/api/console_script.cpp
   ${SRC}/app/script/api/dialog_script.cpp
   ${SRC}/app/script/api/document_script.cpp
+  ${SRC}/app/script/api/entry_script.cpp
   ${SRC}/app/script/api/image_script.cpp
   ${SRC}/app/script/api/intentry_script.cpp
   ${SRC}/app/script/api/label_script.cpp
@@ -646,7 +647,6 @@ set(SRC_FILES
   ${SRC}/gfx/region.cpp
   ${SRC}/gfx/rgb.cpp
   ${SRC}/main/main.cpp
-  ${SRC}/net/http_headers.cpp
   ${SRC}/net/http_request.cpp
   ${SRC}/net/http_response.cpp
   ${SRC}/observable/obs/connection.cpp
