@@ -8,7 +8,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_definitions(-DANDROID -DHAVE_CONFIG_H)
 set(ANDROID on)
 
-set(USE_ALLEG4_BACKEND off)
 set(USE_SDL2_BACKEND on)
 
 set(LOADPNG_DIR         ${CMAKE_SOURCE_DIR}/../../third_party/loadpng)
@@ -17,6 +16,10 @@ set(DUKTAPE_DIR         ${CMAKE_SOURCE_DIR}/../../third_party/duktape)
 set(MODP_B64_DIR        ${CMAKE_SOURCE_DIR}/../../third_party/modp_b64)
 
 set(curl "-L${CMAKE_CURRENT_SOURCE_DIR}/../curl/${CMAKE_ANDROID_ARCH_ABI}" "-lcurl")
+set(V8 "-L${CMAKE_CURRENT_SOURCE_DIR}/../v8/libs/v8/${CMAKE_ANDROID_ARCH_ABI}" "-lv8")
+set(UV "-L${CMAKE_CURRENT_SOURCE_DIR}/../v8/libs/uv/${CMAKE_ANDROID_ARCH_ABI}" "-luv")
+add_definitions(-DSCRIPT_ENGINE_V8=1)
+add_definitions(-DV8_COMPRESS_POINTERS)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/include
@@ -29,6 +32,7 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../curl/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../v8/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml2
         ${CMAKE_CURRENT_SOURCE_DIR}/../pixman/pixman
         ${CMAKE_CURRENT_SOURCE_DIR}/../pixman
@@ -133,7 +137,7 @@ set(SRC_FILES
   # ${SRC}/render/ordered_dither_tests.cpp
   # ${SRC}/render/render_tests.cpp
   # ${SRC}/script/lua/engine.cpp
-  # ${SRC}/script/v8/engine.cpp
+  ${SRC}/script/v8/engine.cpp
   # ${SRC}/she/alleg4/alleg_display.cpp
   # ${SRC}/she/alleg4/alleg_surface.cpp
   # ${SRC}/she/alleg4/display_events.cpp
@@ -729,6 +733,8 @@ target_link_libraries( # Specifies the target library.
                         giflib
                         tinyxml2
                         ${curl}
+                        ${V8}
+                        ${UV}
                         ${log-lib}
                         ${android-lib}
                         pixman
