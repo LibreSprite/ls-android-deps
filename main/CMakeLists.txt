@@ -19,7 +19,9 @@ set(curl "-L${CMAKE_CURRENT_SOURCE_DIR}/../curl/${CMAKE_ANDROID_ARCH_ABI}" "-lcu
 set(V8 "-L${CMAKE_CURRENT_SOURCE_DIR}/../v8/libs/v8/${CMAKE_ANDROID_ARCH_ABI}" "-lv8")
 set(UV "-L${CMAKE_CURRENT_SOURCE_DIR}/../v8/libs/uv/${CMAKE_ANDROID_ARCH_ABI}" "-luv")
 add_definitions(-DSCRIPT_ENGINE_V8=1)
-add_definitions(-DV8_COMPRESS_POINTERS)
+if("${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "arm64-v8a" OR "${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "x86_64")
+  add_definitions(-DV8_COMPRESS_POINTERS)
+endif()
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/include
