@@ -158,7 +158,9 @@ public class MainActivity extends Activity {
     void onDropFile(Intent intent) throws Exception {
         Uri uri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
         if (uri == null) {
-            return;
+            uri = intent.getData();
+            if (uri == null)
+               return;
         }
         String file = createFileFromInputStream(uri).getAbsolutePath();
         MainActivity.onNativeDropFile(file);
