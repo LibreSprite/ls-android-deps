@@ -24,34 +24,43 @@ if("${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "arm64-v8a" OR "${CMAKE_ANDROID_ARCH_ABI
 endif()
 
 include_directories(
-        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/include
-
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2/include
         # SDL_internal.h is located in src required by SDL_android_main.c bridge
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/include
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2_image/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2_gfx/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2_mixer/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2_ttf/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/tinyxml2
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/pixman/pixman
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/pixman
 
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_image/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../curl/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../v8/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml2
         ${CMAKE_CURRENT_SOURCE_DIR}/../pixman/pixman
         ${CMAKE_CURRENT_SOURCE_DIR}/../pixman
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/../curl/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../v8/include
         ${SIMPLEINI_DIR}
         ${DUKTAPE_DIR}
         ${MODP_B64_DIR}
 )
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_image/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_image/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../giflib/ ${CMAKE_CURRENT_SOURCE_DIR}/../giflib/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/ ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml2 ${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml2/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../pixman/ ${CMAKE_CURRENT_SOURCE_DIR}/../pixman/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_image/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2_image/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2_gfx/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2_mixer/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2_ttf/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../giflib/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/giflib/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/ ${CMAKE_CURRENT_SOURCE_DIR}/../../${CMAKE_ANDROID_ARCH_ABI}/third_party/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml2 ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/tinyxml2/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../pixman/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/pixman/)
 
 find_library( # Sets the name of the path variable.
               log-lib
