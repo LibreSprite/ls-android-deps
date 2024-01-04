@@ -14,6 +14,7 @@ set(LOADPNG_DIR         ${CMAKE_SOURCE_DIR}/../../third_party/loadpng)
 set(SIMPLEINI_DIR       ${CMAKE_SOURCE_DIR}/../../third_party/simpleini)
 set(DUKTAPE_DIR         ${CMAKE_SOURCE_DIR}/../../third_party/duktape)
 set(MODP_B64_DIR        ${CMAKE_SOURCE_DIR}/../../third_party/modp_b64)
+set(QOI_DIR             ${CMAKE_SOURCE_DIR}/../../third_party/qoi)
 
 set(curl "-L${CMAKE_CURRENT_SOURCE_DIR}/../curl/${CMAKE_ANDROID_ARCH_ABI}" "-lcurl")
 set(V8 "-L${CMAKE_CURRENT_SOURCE_DIR}/../v8/libs/v8/${CMAKE_ANDROID_ARCH_ABI}" "-lv8")
@@ -50,6 +51,7 @@ include_directories(
         ${SIMPLEINI_DIR}
         ${DUKTAPE_DIR}
         ${MODP_B64_DIR}
+        ${QOI_DIR}
 )
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2/)
@@ -396,6 +398,7 @@ set(SRC_FILES
   ${SRC}/app/file/pcx_format.cpp
   ${SRC}/app/file/pixly_format.cpp
   ${SRC}/app/file/png_format.cpp
+  ${SRC}/app/file/qoi_format.cpp
   ${SRC}/app/file/she_format.cpp
   ${SRC}/app/file/split_filename.cpp
   ${SRC}/app/file/tga_format.cpp
