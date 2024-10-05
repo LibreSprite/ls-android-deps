@@ -21,7 +21,7 @@ apply plugin: 'kotlin-android'
 */
     android {
         compileSdkVersion = gradle.sdkVersion
-        version = '1.1-dev'
+        version = '1.2-dev'
 
         defaultConfig {
             applicationId = 'io.github.libresprite'
