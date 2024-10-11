@@ -15,6 +15,7 @@ set(SIMPLEINI_DIR       ${CMAKE_SOURCE_DIR}/../../third_party/simpleini)
 set(DUKTAPE_DIR         ${CMAKE_SOURCE_DIR}/../../third_party/duktape)
 set(MODP_B64_DIR        ${CMAKE_SOURCE_DIR}/../../third_party/modp_b64)
 set(QOI_DIR             ${CMAKE_SOURCE_DIR}/../../third_party/qoi)
+set(OBSERVABLE_DIR      ${CMAKE_SOURCE_DIR}/../../third_party/observable)
 
 set(curl "-L${CMAKE_CURRENT_SOURCE_DIR}/../curl/${CMAKE_ANDROID_ARCH_ABI}" "-lcurl")
 set(V8 "-L${CMAKE_CURRENT_SOURCE_DIR}/../v8/libs/v8/${CMAKE_ANDROID_ARCH_ABI}" "-lv8")
@@ -52,6 +53,7 @@ include_directories(
         ${DUKTAPE_DIR}
         ${MODP_B64_DIR}
         ${QOI_DIR}
+        ${OBSERVABLE_DIR}
 )
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2/)
@@ -80,7 +82,7 @@ set(GENSRC ${CMAKE_CURRENT_SOURCE_DIR}/../../build/src)
 include_directories(
   ${SRC}
   ${GENSRC}/base
-  ${SRC}/observable
+  ${OBSERVABLE_DIR}
   ${GENSRC}/app
   ${CMAKE_CURRENT_SOURCE_DIR}/../freetype/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_png/include
@@ -668,7 +670,7 @@ set(SRC_FILES
   ${SRC}/main/main.cpp
   ${SRC}/net/http_request.cpp
   ${SRC}/net/http_response.cpp
-  ${SRC}/observable/obs/connection.cpp
+  ${OBSERVABLE_DIR}/obs/connection.cpp
   ${SRC}/render/get_sprite_pixel.cpp
   ${SRC}/render/quantization.cpp
   ${SRC}/render/render.cpp
