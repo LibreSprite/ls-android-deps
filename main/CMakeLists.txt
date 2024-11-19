@@ -69,12 +69,14 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../pixman/ ${CMAKE_CURRENT_SOURCE_D
 find_library( # Sets the name of the path variable.
               log-lib
               # Specifies the name of the NDK library that you want CMake to locate.
-              log )
+              log
+)
 
 find_library( # Sets the name of the path variable.
               android-lib
               # Specifies the name of the NDK library that you want CMake to locate.
-              android )
+              android
+)
 
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/../../src)
 set(GENSRC ${CMAKE_CURRENT_SOURCE_DIR}/../../build/src)
@@ -729,19 +731,29 @@ set(SRC_FILES
   ${SRC}/undo/undo_history.cpp
 )
 
-add_library(main-lib
+add_library(
+        main-lib
 
-            SHARED
+        SHARED
 
-            SDL_android_main.c
-            extractAssets.cpp
-
-            # example.cpp
-            ${SRC_FILES}
-           )
+        src/main/SDL_android_main.c
+        src/main/extractAssets.cpp
+        ${SRC_FILES}
+)
+#add_library(main-lib
+#
+#            SHARED
+#
+#        SDL_android_main.c
+#        extractAssets.cpp
+#
+#            # example.cpp
+#            ${SRC_FILES}
+#           )
 
 target_link_libraries( # Specifies the target library.
                         main-lib
+                        -landroid
                         SDL2
                         SDL2_image
                         SDL2_gfx

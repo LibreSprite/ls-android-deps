@@ -1,12 +1,13 @@
 /*
     SDL_android_main.c, placed in the public domain by Sam Lantinga  3/13/14
 */
-#include "SDL_internal.h"
+#include "../../../SDL2/src/SDL_internal.h"
+#include "../../../SDL2/include/SDL_main.h"
 
 #ifdef __ANDROID__
 #include <unistd.h>
 /* Include the SDL main definition header */
-#include "SDL_main.h"
+//#include "SDL_main.h"
 
 /*******************************************************************************
                  Functions called by JNI
