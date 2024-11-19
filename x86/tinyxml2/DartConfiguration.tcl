@@ -62,8 +62,8 @@ UpdateOptions:
 UpdateType: 
 
 # Compiler info
-Compiler: C:/Users/ssickle/AppData/Local/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/bin/clang++.exe
-CompilerVersion: 14.0.6
+Compiler: C:/Users/ssickle/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/bin/clang++.exe
+CompilerVersion: 18.0.1
 
 # Dynamic analysis (MemCheck)
 PurifyCommand: 
