@@ -736,20 +736,10 @@ add_library(
 
         SHARED
 
-        src/main/SDL_android_main.c
-        src/main/extractAssets.cpp
+        src/SDL_android_main.c
+        src/extractAssets.cpp
         ${SRC_FILES}
 )
-#add_library(main-lib
-#
-#            SHARED
-#
-#        SDL_android_main.c
-#        extractAssets.cpp
-#
-#            # example.cpp
-#            ${SRC_FILES}
-#           )
 
 target_link_libraries( # Specifies the target library.
                         main-lib
