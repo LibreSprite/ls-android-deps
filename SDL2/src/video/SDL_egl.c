@@ -51,7 +51,7 @@
 #define DEFAULT_OGL_ES2 "libGLESv2.so"
 #define DEFAULT_OGL_ES_PVR "libGLES_CM.so"
 #define DEFAULT_OGL_ES "libGLESv1_CM.so"
-
+#include <android/native_window.h>
 #elif SDL_VIDEO_DRIVER_WINDOWS || SDL_VIDEO_DRIVER_WINRT
 /* EGL AND OpenGL ES support via ANGLE */
 #define DEFAULT_EGL "libEGL.dll"
