@@ -179,6 +179,7 @@ add_library( # Sets the name of the library.
 
 target_link_libraries( # Specifies the target library.
         SDL2
+        -landroid
         GLESv1_CM
         GLESv2
         android
