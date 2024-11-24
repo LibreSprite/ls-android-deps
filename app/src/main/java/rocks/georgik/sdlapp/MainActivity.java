@@ -36,7 +36,6 @@ import android.media.*;
 import android.hardware.*;
 import android.content.pm.ActivityInfo;
 import androidx.core.content.FileProvider;
-import androidx.core.view.ViewCompat;
 
 /**
     SDL Activity
@@ -154,7 +153,6 @@ public class MainActivity extends Activity {
         mLayout.addView(mSurface);
         setContentView(mLayout);
         setFullscreen();
-        applySafeInsets(mSurface);
     }
 
     void onDropFile(Intent intent) throws Exception {
@@ -272,20 +270,6 @@ public class MainActivity extends Activity {
             window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
             window.clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
         }
-    }
-
-    void applySafeInsets(View view) {
-        ViewCompat.setOnApplyWindowInsetsListener(view, (v, windowInsets) -> {
-            ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-
-            mlp.topMargin = windowInsets.getStableInsetTop();
-            mlp.leftMargin = windowInsets.getStableInsetLeft();
-            mlp.rightMargin = windowInsets.getStableInsetRight();
-            mlp.bottomMargin = windowInsets.getStableInsetBottom();
-
-            v.setLayoutParams(mlp);
-            return windowInsets;
-        });
     }
 
     // Events
