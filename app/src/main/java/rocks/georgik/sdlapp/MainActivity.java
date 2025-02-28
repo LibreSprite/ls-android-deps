@@ -1,6 +1,7 @@
 package rocks.georgik.sdlapp;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,10 +14,14 @@ import java.util.List;
 import java.lang.reflect.Method;
 import java.util.Queue;
 
+import android.Manifest;
 import android.app.*;
 import android.content.*;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.net.Uri;
+import android.provider.MediaStore;
+import android.provider.Settings;
 import android.text.InputType;
 import android.view.*;
 import android.view.inputmethod.BaseInputConnection;
@@ -35,6 +40,10 @@ import android.graphics.drawable.Drawable;
 import android.media.*;
 import android.hardware.*;
 import android.content.pm.ActivityInfo;
+
+import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 /**
@@ -122,14 +131,53 @@ public class MainActivity extends Activity {
         mHasFocus = true;
     }
 
+
+    private static final int REQUEST_CODE_READ_EXTERNAL_STORAGE = 100;
+    private static final int REQUEST_CODE_MANAGE_EXTERNAL_STORAGE = 101;
+
     // Setup
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.v(TAG, "Device: " + android.os.Build.DEVICE);
-        Log.v(TAG, "Model: " + android.os.Build.MODEL);
-        Log.v(TAG, "onCreate(): " + mSingleton);
         super.onCreate(savedInstanceState);
+	handleIncomingIntent();
+    }
 
+    private void requestPermissions() {
+        // Check and request permissions
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                startActivityForResult(intent, REQUEST_CODE_MANAGE_EXTERNAL_STORAGE);
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE_READ_EXTERNAL_STORAGE);
+            }
+        }
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE_READ_EXTERNAL_STORAGE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                handleIncomingIntent();
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_MANAGE_EXTERNAL_STORAGE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
+                handleIncomingIntent();
+            }
+        }
+    }
+
+    private void handleIncomingIntent() {
         // Get filename from "Open with" of another application
         Intent intent = getIntent();
         if (mSingleton == null) {
@@ -162,7 +210,7 @@ public class MainActivity extends Activity {
             if (uri == null)
                return;
         }
-        String file = createFileFromInputStream(uri).getAbsolutePath();
+    	String file = createFileFromInputStream(uri).getAbsolutePath();
         MainActivity.onNativeDropFile(file);
     }
 
@@ -171,9 +219,14 @@ public class MainActivity extends Activity {
         InputStream inputStream = null;
         FileOutputStream outputStream = null;
 
+	try {
+            inputStream = getContentResolver().openInputStream(uri);
+	} catch (FileNotFoundException e) {
+	    requestPermissions();
+	    return null;
+	}
+
         try {
-            ContentResolver contentResolver = getContentResolver();
-            inputStream = contentResolver.openInputStream(uri);
 
             if (inputStream != null) {
                 // Create a temporary file

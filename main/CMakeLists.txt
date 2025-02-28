@@ -288,6 +288,7 @@ set(SRC_FILES
   ${SRC}/app/commands/cmd_home.cpp
   ${SRC}/app/commands/cmd_import_sprite_sheet.cpp
   ${SRC}/app/commands/cmd_invert_mask.cpp
+  ${SRC}/app/commands/cmd_install_script.cpp
   ${SRC}/app/commands/cmd_keyboard_shortcuts.cpp
   ${SRC}/app/commands/cmd_launch.cpp
   ${SRC}/app/commands/cmd_layer_from_background.cpp
