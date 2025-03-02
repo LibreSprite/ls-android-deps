@@ -742,6 +742,8 @@ add_library(
         ${SRC_FILES}
 )
 
+target_compile_options(main-lib PRIVATE -Wno-switch)
+
 target_link_libraries( # Specifies the target library.
                         main-lib
                         -landroid

@@ -788,35 +788,38 @@ public class MainActivity extends Activity {
      * This method is called by SDL using JNI.
      */
     public static int captureOpen(int sampleRate, boolean is16Bit, boolean isStereo, int desiredFrames) {
-        int channelConfig = isStereo ? AudioFormat.CHANNEL_CONFIGURATION_STEREO : AudioFormat.CHANNEL_CONFIGURATION_MONO;
-        int audioFormat = is16Bit ? AudioFormat.ENCODING_PCM_16BIT : AudioFormat.ENCODING_PCM_8BIT;
-        int frameSize = (isStereo ? 2 : 1) * (is16Bit ? 2 : 1);
+	// Missing permissions required by AudioRecord.AudioRecord: android.permission.RECORD_AUDIO [MissingPermission]
+	return -1;
 
-        Log.v(TAG, "SDL capture: wanted " + (isStereo ? "stereo" : "mono") + " " + (is16Bit ? "16-bit" : "8-bit") + " " + (sampleRate / 1000f) + "kHz, " + desiredFrames + " frames buffer");
+        // int channelConfig = isStereo ? AudioFormat.CHANNEL_CONFIGURATION_STEREO : AudioFormat.CHANNEL_CONFIGURATION_MONO;
+        // int audioFormat = is16Bit ? AudioFormat.ENCODING_PCM_16BIT : AudioFormat.ENCODING_PCM_8BIT;
+        // int frameSize = (isStereo ? 2 : 1) * (is16Bit ? 2 : 1);
 
-        // Let the user pick a larger buffer if they really want -- but ye
-        // gods they probably shouldn't, the minimums are horrifyingly high
-        // latency already
-        desiredFrames = Math.max(desiredFrames, (AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat) + frameSize - 1) / frameSize);
+        // Log.v(TAG, "SDL capture: wanted " + (isStereo ? "stereo" : "mono") + " " + (is16Bit ? "16-bit" : "8-bit") + " " + (sampleRate / 1000f) + "kHz, " + desiredFrames + " frames buffer");
 
-        if (mAudioRecord == null) {
-            mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate,
-                    channelConfig, audioFormat, desiredFrames * frameSize);
+        // // Let the user pick a larger buffer if they really want -- but ye
+        // // gods they probably shouldn't, the minimums are horrifyingly high
+        // // latency already
+        // desiredFrames = Math.max(desiredFrames, (AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat) + frameSize - 1) / frameSize);
 
-            // see notes about AudioTrack state in audioOpen(), above. Probably also applies here.
-            if (mAudioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
-                Log.e(TAG, "Failed during initialization of AudioRecord");
-                mAudioRecord.release();
-                mAudioRecord = null;
-                return -1;
-            }
+        // if (mAudioRecord == null) {
+        //     mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate,
+        //             channelConfig, audioFormat, desiredFrames * frameSize);
 
-            mAudioRecord.startRecording();
-        }
+        //     // see notes about AudioTrack state in audioOpen(), above. Probably also applies here.
+        //     if (mAudioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
+        //         Log.e(TAG, "Failed during initialization of AudioRecord");
+        //         mAudioRecord.release();
+        //         mAudioRecord = null;
+        //         return -1;
+        //     }
 
-        Log.v(TAG, "SDL capture: got " + ((mAudioRecord.getChannelCount() >= 2) ? "stereo" : "mono") + " " + ((mAudioRecord.getAudioFormat() == AudioFormat.ENCODING_PCM_16BIT) ? "16-bit" : "8-bit") + " " + (mAudioRecord.getSampleRate() / 1000f) + "kHz, " + desiredFrames + " frames buffer");
+        //     mAudioRecord.startRecording();
+        // }
 
-        return 0;
+        // Log.v(TAG, "SDL capture: got " + ((mAudioRecord.getChannelCount() >= 2) ? "stereo" : "mono") + " " + ((mAudioRecord.getAudioFormat() == AudioFormat.ENCODING_PCM_16BIT) ? "16-bit" : "8-bit") + " " + (mAudioRecord.getSampleRate() / 1000f) + "kHz, " + desiredFrames + " frames buffer");
+
+        // return 0;
     }
 
     /** This method is called by SDL using JNI. */
