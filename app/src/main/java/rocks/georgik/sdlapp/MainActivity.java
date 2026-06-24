@@ -139,8 +139,24 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+	// NOTE: we intentionally do NOT relaunch the activity to force a maximized
+	// window on Samsung DeX. SDL2 keeps its native state in process-global
+	// singletons that cannot survive the activity being destroyed and
+	// recreated, so the old self-relaunch made the process exit cleanly
+	// (code 0) the instant the maximized instance came up -- which is what
+	// looked like the "DeX maximize crash". We instead rely on the manifest
+	// <layout defaultWidth/Height="100%"> hint to open filling the display,
+	// keeping a single stable activity instance for SDL to run in.
 	handleIncomingIntent();
+	// Ask for storage access on launch so the in-app file browser can open
+	// and save files. Previously this was only triggered when opening a file
+	// via "Open with" failed, so a normally-launched app never prompted.
+	requestPermissions();
     }
+
+    // (Removed maybeRelaunchMaximizedForDeX()/isSamsungDeX(): the DeX
+    // self-relaunch tore down the SDL activity and made the app exit on
+    // maximize. See the note in onCreate above.)
 
     private void requestPermissions() {
         // Check and request permissions
@@ -194,13 +210,16 @@ public class MainActivity extends Activity {
 
         // So we can call stuff from static callbacks
         mSingleton = this;
-        // Set up the surface
-        mSurface = new SDLSurface(getApplication());
-        mJoystickHandler = new SDLJoystickHandler();
-        mLayout = new RelativeLayout(this);
-        mLayout.addView(mSurface);
-        setContentView(mLayout);
-        setFullscreen();
+        // Set up the surface (only once -- this method may be re-entered from
+        // onActivityResult after the storage permission is granted).
+        if (mSurface == null) {
+            mSurface = new SDLSurface(getApplication());
+            mJoystickHandler = new SDLJoystickHandler();
+            mLayout = new RelativeLayout(this);
+            mLayout.addView(mSurface);
+            setContentView(mLayout);
+            setFullscreen();
+        }
     }
 
     void onDropFile(Intent intent) throws Exception {
@@ -428,7 +447,51 @@ public class MainActivity extends Activity {
             ) {
             return false;
         }
+
+        // Route keys from a physical keyboard to SDL through this single,
+        // ordered path. The IME otherwise splits keys across DummyEdit.onKey,
+        // SDLInputConnection.sendKeyEvent and onKeyPreIme, which dropped/reordered
+        // modifier key-ups and made combos like Ctrl+Z behave like sticky keys.
+        // Plain printing keys with no Ctrl/Alt/Meta are left for the IME so text
+        // fields still receive their character.
+        InputDevice device = event.getDevice();
+        boolean fullKeyboard = device != null
+                && (event.getSource() & InputDevice.SOURCE_KEYBOARD) == InputDevice.SOURCE_KEYBOARD
+                && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC
+                && !device.isVirtual();
+        if (fullKeyboard) {
+            boolean modifierInvolved = event.isCtrlPressed() || event.isAltPressed()
+                    || event.isMetaPressed() || isModifierKeyCode(keyCode);
+            boolean printing = event.isPrintingKey() || keyCode == KeyEvent.KEYCODE_SPACE;
+            if (modifierInvolved || !printing) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                    MainActivity.onNativeKeyDown(keyCode);
+                } else if (event.getAction() == KeyEvent.ACTION_UP) {
+                    MainActivity.onNativeKeyUp(keyCode);
+                }
+                return true; // consumed; keep it out of the competing IME paths
+            }
+            // else: plain printing key, no modifier -> let the IME deliver text.
+        }
         return super.dispatchKeyEvent(event);
+    }
+
+    private static boolean isModifierKeyCode(int keyCode) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_CTRL_LEFT:
+            case KeyEvent.KEYCODE_CTRL_RIGHT:
+            case KeyEvent.KEYCODE_ALT_LEFT:
+            case KeyEvent.KEYCODE_ALT_RIGHT:
+            case KeyEvent.KEYCODE_SHIFT_LEFT:
+            case KeyEvent.KEYCODE_SHIFT_RIGHT:
+            case KeyEvent.KEYCODE_META_LEFT:
+            case KeyEvent.KEYCODE_META_RIGHT:
+            case KeyEvent.KEYCODE_CAPS_LOCK:
+            case KeyEvent.KEYCODE_FUNCTION:
+                return true;
+            default:
+                return false;
+        }
     }
 
     /** Called by onPause or surfaceDestroyed. Even if surfaceDestroyed
@@ -598,6 +661,53 @@ public class MainActivity extends Activity {
         return mSingleton.getExternalFilesDir(null).getAbsolutePath();
     }
 
+    // Called from native (base/launcher.cpp) to open a folder in a file manager.
+    // Returns false if it couldn't, so the caller can fall back to showing the
+    // path. A DocumentsContract VIEW intent needs a SAF grant we don't have, so
+    // launch Samsung's "My Files" (the stock file manager) with the path; if it
+    // honors the START_PATH extra it opens right at the folder, otherwise it at
+    // least opens the file manager.
+    public static boolean openFolder(String path) {
+        // 1) Samsung "My Files" (the stock file manager on Galaxy devices): opens
+        //    a full file manager, ideally right at the path.
+        try {
+            PackageManager pm = mSingleton.getPackageManager();
+            Intent intent = pm.getLaunchIntentForPackage("com.sec.android.app.myfiles");
+            if (intent != null) {
+                intent.putExtra("samsung.myfiles.intent.extra.START_PATH", path);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                mSingleton.startActivity(intent);
+                return true;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "openFolder via My Files failed: " + e);
+        }
+
+        // 2) Universal fallback: the system document UI (Storage Access
+        //    Framework) opened at the folder, so the user can browse/manage it
+        //    on any device/file manager. EXTRA_INITIAL_URI is a hint (API 26+).
+        try {
+            String prefix = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+            String rel = path;
+            if (rel.startsWith(prefix))
+                rel = rel.substring(prefix.length());
+            while (rel.startsWith("/"))
+                rel = rel.substring(1);
+
+            android.net.Uri initial = android.provider.DocumentsContract.buildDocumentUri(
+                "com.android.externalstorage.documents", "primary:" + rel);
+
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+            intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, initial);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mSingleton.startActivity(intent);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "openFolder via SAF failed: " + e);
+        }
+        return false;
+    }
+
     /**
      * This method is called by SDL using JNI.
      */
@@ -684,7 +794,19 @@ public class MainActivity extends Activity {
             mTextEdit.requestFocus();
 
             InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.showSoftInput(mTextEdit, 0);
+            // When a hardware keyboard is connected (e.g. the Samsung Book Cover
+            // keyboard) do NOT pop the on-screen keyboard. The SDL backend asks
+            // to start text input on nearly every keypress; popping the soft
+            // keyboard each time stole focus and covered the canvas, which broke
+            // input after the first key. Hardware key events still reach the app
+            // (via DummyEdit/onNativeKeyDown), so shortcuts and typing keep
+            // working without the on-screen keyboard.
+            Configuration cfg = getContext().getResources().getConfiguration();
+            boolean hardwareKeyboard = cfg.keyboard == Configuration.KEYBOARD_QWERTY
+                    && cfg.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
+            if (!hardwareKeyboard) {
+                imm.showSoftInput(mTextEdit, 0);
+            }
         }
     }
 
@@ -1456,6 +1578,15 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         float x, y;
         int action;
 
+        // Palm rejection: a hovering stylus primes the rejection window, so a
+        // palm landing just before the pen touches down is also ignored.
+        int hoverToolType = event.getToolType(event.getActionIndex());
+        if ((event.getSource() & InputDevice.SOURCE_STYLUS) == InputDevice.SOURCE_STYLUS
+                || hoverToolType == MotionEvent.TOOL_TYPE_STYLUS
+                || hoverToolType == MotionEvent.TOOL_TYPE_ERASER) {
+            lastStylusEventTime = System.currentTimeMillis();
+        }
+
         switch ( event.getSource() ) {
             case InputDevice.SOURCE_JOYSTICK:
             case InputDevice.SOURCE_GAMEPAD:
@@ -1492,6 +1623,21 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
 
     long beginTouchTime;
     Handler touchHandler = new Handler();
+
+    // --- Palm rejection (Samsung S-Pen and other styluses) ---
+    // While the stylus is touching the screen, or shortly after it lifts or
+    // while it hovers, finger (and palm) touches are ignored so the user can
+    // rest their hand on the tablet while drawing with the pen.
+    private boolean stylusActive = false;
+    private long lastStylusEventTime = 0;
+    private static final long PALM_REJECT_WINDOW_MS = 600;
+    // The most recent plain-finger pointer that was forwarded, so an in-progress
+    // finger stroke can be ended if a stylus lands afterwards (palm-before-pen).
+    private boolean fingerDown = false;
+    private int lastFingerId = -1, lastFingerDev = -1;
+    private float lastFingerX = 0, lastFingerY = 0;
+    private float lastFingerPxX = 0, lastFingerPxY = 0;
+    private boolean penButtonDown = false;
 
     void addTouch(MotionEvent event) {
         Touch touch = new Touch();
@@ -1546,45 +1692,81 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         MainActivity.onNativeMouse(0, MotionEvent.ACTION_MOVE, mWidth * 10, mHeight * 10);
     }
 
-    void startDrag(MotionEvent event) {
-        if (dragging || beginTouchTime == 0)
-            return;
+    // Two-finger gestures only activate after deliberate movement, so a resting
+    // palm -- which on this device registers as two finger contacts the same
+    // size as fingertips -- does not pan or zoom the canvas.
+    boolean dragArmed;
+    float armCenterX, armCenterY;
+    double armDistance;
+    static final float DRAG_ACTIVATE_PX = 40;
+
+    void activateDrag(float cx, float cy, double dist) {
         dragging = true;
+        dragArmed = false;
         cancelTouch();
-        updateDragCenter(event);
+        lastDragX = cx;
+        lastDragY = cy;
         MainActivity.onNativeMouse(4, MotionEvent.ACTION_DOWN, lastDragX, lastDragY);
-        float dx = event.getX(0) - event.getX(1);
-        float dy = event.getY(0) - event.getY(1);
-        startDragDistance = Math.sqrt(dx*dx + dy*dy);
+        startDragDistance = dist;
     }
+    // Emits a single zoom step at the current pinch centre. The two-finger pan
+    // uses the middle mouse button, so it is briefly released around the scroll
+    // (which drives LibreSprite's zoom) and then re-pressed.
+    void emitZoomStep(int direction) {
+        MainActivity.onNativeMouse(4, MotionEvent.ACTION_UP, lastDragX, lastDragY);
+        MainActivity.onNativeMouse(0, MotionEvent.ACTION_SCROLL, 0, direction);
+        MainActivity.onNativeMouse(4, MotionEvent.ACTION_DOWN, lastDragX, lastDragY);
+    }
+
     void updateDrag(MotionEvent event) {
-        boolean enabled = event.getPointerCount() == 2;
-        if (enabled != dragging) {
-            if (!enabled) {
-                stopDrag(event);
-            } else {
-                startDrag(event);
-            }
+        if (event.getPointerCount() != 2) {
+            if (dragging) stopDrag(event);
+            dragArmed = false;
             return;
         }
-        if (enabled) {
-            updateDragCenter(event);
-            MainActivity.onNativeMouse(4, MotionEvent.ACTION_MOVE, lastDragX, lastDragY);
-            if (startDragDistance > 0) {
-                float dx = event.getX(0) - event.getX(1);
-                float dy = event.getY(0) - event.getY(1);
-                double dragDistance = Math.sqrt(dx * dx + dy * dy);
-                double zoom = dragDistance / startDragDistance;
-                if (zoom < 1) zoom = 1 + (-1 / zoom);
-                else zoom--;
-                long direction = Math.round(zoom);
-                // Log.i("SCROLL", "Direction:" + direction + " zoom:" + zoom);
-                if (direction != 0) {
-                    startDragDistance = dragDistance;
-                    MainActivity.onNativeMouse(4, MotionEvent.ACTION_UP, lastDragX, lastDragY);
-                    MainActivity.onNativeMouse(0, MotionEvent.ACTION_SCROLL,0, direction);
-                    MainActivity.onNativeMouse(4, MotionEvent.ACTION_DOWN, lastDragX, lastDragY);
-                }
+
+        float cx = (event.getX(0) + event.getX(1)) / 2;
+        float cy = (event.getY(0) + event.getY(1)) / 2;
+        float dx = event.getX(0) - event.getX(1);
+        float dy = event.getY(0) - event.getY(1);
+        double dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (!dragging) {
+            if (!dragArmed) {
+                // First frame with two pointers: arm and wait to see if it is a
+                // deliberate gesture before doing anything to the canvas.
+                dragArmed = true;
+                armCenterX = cx;
+                armCenterY = cy;
+                armDistance = dist;
+                return;
+            }
+            // Only start panning/zooming once the fingers move enough; a resting
+            // palm barely moves, so it never reaches this point.
+            double centerMove = Math.hypot(cx - armCenterX, cy - armCenterY);
+            double distChange = Math.abs(dist - armDistance);
+            if (centerMove < DRAG_ACTIVATE_PX && distChange < DRAG_ACTIVATE_PX) {
+                return;
+            }
+            activateDrag(cx, cy, dist);
+            return;
+        }
+
+        // Active two-finger gesture: pan with the middle button, zoom on pinch.
+        lastDragX = cx;
+        lastDragY = cy;
+        MainActivity.onNativeMouse(4, MotionEvent.ACTION_MOVE, lastDragX, lastDragY);
+        if (startDragDistance > 0) {
+            // One zoom step per ~12% change in the pinch distance, stepping
+            // repeatedly so fast pinches keep up.
+            final double ZOOM_STEP = 1.12;
+            while (dist >= startDragDistance * ZOOM_STEP) {
+                startDragDistance *= ZOOM_STEP;
+                emitZoomStep(1);
+            }
+            while (dist <= startDragDistance / ZOOM_STEP) {
+                startDragDistance /= ZOOM_STEP;
+                emitZoomStep(-1);
             }
         }
     }
@@ -1600,6 +1782,132 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         int mouseButton;
         int i = -1;
         float x,y,p;
+
+        // --- Palm rejection ---
+        // Find a stylus pointer in this event (Samsung S-Pen, etc.).
+        int stylusIndex = -1;
+        for (int pi = 0; pi < pointerCount; pi++) {
+            int tt = event.getToolType(pi);
+            if (tt == MotionEvent.TOOL_TYPE_STYLUS || tt == MotionEvent.TOOL_TYPE_ERASER) {
+                stylusIndex = pi;
+                break;
+            }
+        }
+        final long nowMs = System.currentTimeMillis();
+
+        if (stylusIndex >= 0) {
+            // A stylus is touching: draw with the pen only and ignore every
+            // finger/palm pointer. Everything goes through onNativeTouch so it
+            // stays on SDL's touch-mouse device (SDL_TOUCH_MOUSEID) -- the same
+            // device the palm's synthesized press used. (The earlier attempt to
+            // release the palm via onNativeMouse failed because that targets a
+            // *different* SDL mouse, so the palm press stayed down and dragged a
+            // line to the pen.)
+            lastStylusEventTime = nowMs;
+
+            // Cancel any buffered finger touch and release a palm stroke that may
+            // have started before the pen, on the same touch-mouse device.
+            cancelTouch();
+            if (fingerDown) {
+                MainActivity.onNativeTouch(lastFingerDev, lastFingerId, MotionEvent.ACTION_UP,
+                                           lastFingerX, lastFingerY, 0f);
+                fingerDown = false;
+            }
+            // End any two-finger pan/zoom the palm may have started, so a stuck
+            // pan does not interfere with the pen stroke.
+            if (dragging) {
+                MainActivity.onNativeMouse(4, MotionEvent.ACTION_UP, lastDragX, lastDragY);
+                dragging = false;
+            }
+            dragArmed = false;
+
+            final boolean actionIsStylus = (event.getActionIndex() == stylusIndex);
+            final float sx = event.getX(stylusIndex) / mWidth;
+            final float sy = event.getY(stylusIndex) / mHeight;
+            final float sp = Math.min(1.0f, event.getPressure(stylusIndex));
+            // Force finger id 0 so SDL treats the pen as the primary pointer and
+            // its synthesized mouse follows the pen on every move (the synthesis
+            // only tracks finger id 0).
+            final int PEN_ID = 0;
+
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    stylusActive = true;
+                    penButtonDown = true;
+                    MainActivity.onNativeTouch(touchDevId, PEN_ID, MotionEvent.ACTION_DOWN, sx, sy, sp);
+                    break;
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    if (actionIsStylus) {
+                        stylusActive = true;
+                        penButtonDown = true;
+                        MainActivity.onNativeTouch(touchDevId, PEN_ID, MotionEvent.ACTION_DOWN, sx, sy, sp);
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if (penButtonDown) {
+                        MainActivity.onNativeTouch(touchDevId, PEN_ID, MotionEvent.ACTION_MOVE, sx, sy, sp);
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    stylusActive = false;
+                    if (penButtonDown) {
+                        MainActivity.onNativeTouch(touchDevId, PEN_ID, MotionEvent.ACTION_UP, sx, sy, sp);
+                        penButtonDown = false;
+                    }
+                    break;
+                case MotionEvent.ACTION_POINTER_UP:
+                    if (actionIsStylus) {
+                        stylusActive = false;
+                        if (penButtonDown) {
+                            MainActivity.onNativeTouch(touchDevId, PEN_ID, MotionEvent.ACTION_UP, sx, sy, sp);
+                            penButtonDown = false;
+                        }
+                    }
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                    stylusActive = false;
+                    if (penButtonDown) {
+                        MainActivity.onNativeTouch(touchDevId, PEN_ID, MotionEvent.ACTION_UP, sx, sy, sp);
+                        penButtonDown = false;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return true;
+        }
+
+        // No stylus in this event: reject finger/palm input while the pen is
+        // active or was used within the rejection window.
+        if (stylusActive || (nowMs - lastStylusEventTime) < PALM_REJECT_WINDOW_MS) {
+            cancelTouch();
+            return true;
+        }
+
+        // Plain finger input: remember the active pointer so it can be ended if
+        // a stylus lands afterwards, then fall through to the normal handling.
+        {
+            int idx = event.getActionIndex();
+            lastFingerDev = event.getDeviceId();
+            lastFingerId = event.getPointerId(idx);
+            lastFingerX = event.getX(idx) / mWidth;
+            lastFingerY = event.getY(idx) / mHeight;
+            lastFingerPxX = event.getX(idx);
+            lastFingerPxY = event.getY(idx);
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    fingerDown = true;
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_POINTER_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    fingerDown = false;
+                    break;
+                default:
+                    break;
+            }
+        }
 
         if (event.getSource() == InputDevice.SOURCE_MOUSE) {
             stopDrag(event);
@@ -1658,6 +1966,15 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
             case MotionEvent.ACTION_CANCEL:
                 flushTouch();
                 updateDrag(event);
+                // The system cancels the palm touch when the pen approaches.
+                // Without an explicit release here, SDL's synthesized touch-mouse
+                // button stays pressed, and the next pen-down drags a line from
+                // the palm to the pen. Release it just like ACTION_UP does.
+                i = 0;
+                pointerFingerId = event.getPointerId(i);
+                x = event.getX(i) / mWidth;
+                y = event.getY(i) / mHeight;
+                MainActivity.onNativeTouch(touchDevId, pointerFingerId, MotionEvent.ACTION_UP, x, y, 0f);
                 break;
 
             default:
@@ -1735,16 +2052,21 @@ class DummyEdit extends View implements View.OnKeyListener {
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
 
-        // This handles the hardware keyboard input
-        if (event.isPrintingKey() || keyCode == KeyEvent.KEYCODE_SPACE) {
-            if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                ic.commitText(String.valueOf((char) event.getUnicodeChar()), 1);
-            }
-            return true;
-        }
-
+        // This handles the hardware keyboard input.
+        //
+        // Previously, printing keys (letters/numbers) were swallowed into
+        // commitText() and never delivered to SDL as key events, which broke
+        // every letter-based keyboard shortcut (tool keys like B/E/G/M/Z and
+        // combos like Ctrl+S / Ctrl+Z) whenever text input was active -- which
+        // is most of the time in LibreSprite. Always forward the key to SDL so
+        // shortcuts work, and only commit text for a plain printing key (no
+        // Ctrl/Alt/Meta) so normal text entry still functions.
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             MainActivity.onNativeKeyDown(keyCode);
+            boolean modifierHeld = event.isCtrlPressed() || event.isAltPressed() || event.isMetaPressed();
+            if ((event.isPrintingKey() || keyCode == KeyEvent.KEYCODE_SPACE) && !modifierHeld) {
+                ic.commitText(String.valueOf((char) event.getUnicodeChar()), 1);
+            }
             return true;
         } else if (event.getAction() == KeyEvent.ACTION_UP) {
             MainActivity.onNativeKeyUp(keyCode);

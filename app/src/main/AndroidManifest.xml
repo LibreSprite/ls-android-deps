@@ -31,9 +31,17 @@
 
     <activity
         android:name=".MainActivity"
-        android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode"
+        android:resizeableActivity="true"
         android:exported="true"
         android:label="@string/app_name">
+      <!-- Launch size hint for freeform/Samsung DeX: open filling the display
+           instead of a small phone-sized window. -->
+      <layout android:defaultWidth="100%"
+              android:defaultHeight="100%"
+              android:gravity="center"
+              android:minWidth="640dp"
+              android:minHeight="480dp" />
       <intent-filter android:priority="1"
                      android:icon="@mipmap/ic_launcher"
                      android:label="LibreSprite File">

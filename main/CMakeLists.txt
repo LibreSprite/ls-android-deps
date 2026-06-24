@@ -623,6 +623,7 @@ set(SRC_FILES
   ${SRC}/doc/conversion_she.cpp
   ${SRC}/doc/document.cpp
   ${SRC}/doc/documents.cpp
+  ${SRC}/doc/file/ase_swatch_file.cpp
   ${SRC}/doc/file/col_file.cpp
   ${SRC}/doc/file/gpl_file.cpp
   ${SRC}/doc/file/pal_file.cpp
