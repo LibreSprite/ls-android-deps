@@ -41,6 +41,8 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../pixman
 
         ${CMAKE_CURRENT_SOURCE_DIR}/../curl/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party
         ${SIMPLEINI_DIR}
         ${MODP_B64_DIR}
         ${QOI_DIR}
