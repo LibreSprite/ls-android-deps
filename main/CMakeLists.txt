@@ -318,6 +318,7 @@ set(SRC_FILES
   ${SRC}/app/commands/cmd_remove_frame_tag.cpp
   ${SRC}/app/commands/cmd_remove_layer.cpp
   ${SRC}/app/commands/cmd_repeat_last_export.cpp
+  ${SRC}/app/commands/cmd_reset_symmetry.cpp
   ${SRC}/app/commands/cmd_rescan_scripts.cpp
   ${SRC}/app/commands/cmd_reselect_mask.cpp
   ${SRC}/app/commands/cmd_reverse_frames.cpp
