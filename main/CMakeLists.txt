@@ -12,18 +12,11 @@ set(USE_SDL2_BACKEND on)
 
 set(LOADPNG_DIR         ${CMAKE_SOURCE_DIR}/../../third_party/loadpng)
 set(SIMPLEINI_DIR       ${CMAKE_SOURCE_DIR}/../../third_party/simpleini)
-set(DUKTAPE_DIR         ${CMAKE_SOURCE_DIR}/../../third_party/duktape)
 set(MODP_B64_DIR        ${CMAKE_SOURCE_DIR}/../../third_party/modp_b64)
 set(QOI_DIR             ${CMAKE_SOURCE_DIR}/../../third_party/qoi)
 set(OBSERVABLE_DIR      ${CMAKE_SOURCE_DIR}/../../third_party/observable)
 
 set(curl "-L${CMAKE_CURRENT_SOURCE_DIR}/../curl/${CMAKE_ANDROID_ARCH_ABI}" "-lcurl")
-set(V8 "-L${CMAKE_CURRENT_SOURCE_DIR}/../v8/libs/v8/${CMAKE_ANDROID_ARCH_ABI}" "-lv8")
-set(UV "-L${CMAKE_CURRENT_SOURCE_DIR}/../v8/libs/uv/${CMAKE_ANDROID_ARCH_ABI}" "-luv")
-add_definitions(-DSCRIPT_ENGINE_V8=1)
-if("${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "arm64-v8a" OR "${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "x86_64")
-  add_definitions(-DV8_COMPRESS_POINTERS)
-endif()
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2/include
@@ -48,9 +41,7 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../pixman
 
         ${CMAKE_CURRENT_SOURCE_DIR}/../curl/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../v8/include
         ${SIMPLEINI_DIR}
-        ${DUKTAPE_DIR}
         ${MODP_B64_DIR}
         ${QOI_DIR}
         ${OBSERVABLE_DIR}
@@ -94,7 +85,6 @@ include_directories(
 
 set(SRC_FILES
   ${GENSRC}/app/pref.xml.cpp
-  ${DUKTAPE_DIR}/duktape.c
   # ${SRC}/app/color_tests.cpp
   # ${SRC}/app/document_api_tests.cpp
   # ${SRC}/app/document_range_tests.cpp
@@ -153,8 +143,6 @@ set(SRC_FILES
   # ${SRC}/observable/tests/signals.cpp
   # ${SRC}/render/ordered_dither_tests.cpp
   # ${SRC}/render/render_tests.cpp
-  # ${SRC}/script/lua/engine.cpp
-  ${SRC}/script/v8/engine.cpp
   # ${SRC}/she/alleg4/alleg_display.cpp
   # ${SRC}/she/alleg4/alleg_surface.cpp
   # ${SRC}/she/alleg4/display_events.cpp
@@ -435,10 +423,12 @@ set(SRC_FILES
   ${SRC}/app/script/api/cel_script.cpp
   ${SRC}/app/script/api/colormode_script.cpp
   ${SRC}/app/script/api/console_script.cpp
+  ${SRC}/app/script/api/command_script.cpp
   ${SRC}/app/script/api/dialog_script.cpp
   ${SRC}/app/script/api/document_script.cpp
   ${SRC}/app/script/api/entry_script.cpp
   ${SRC}/app/script/api/image_script.cpp
+  ${SRC}/app/script/api/imageview_script.cpp
   ${SRC}/app/script/api/intentry_script.cpp
   ${SRC}/app/script/api/label_script.cpp
   ${SRC}/app/script/api/layer_script.cpp
@@ -447,9 +437,10 @@ set(SRC_FILES
   ${SRC}/app/script/api/pixelcolor_script.cpp
   ${SRC}/app/script/api/selection_script.cpp
   ${SRC}/app/script/api/sprite_script.cpp
+  ${SRC}/app/script/api/storage_internal.cpp
+  ${SRC}/app/script/api/timer_script.cpp
   ${SRC}/app/script/api/storage_script.cpp
   ${SRC}/app/script/app_scripting.cpp
-  ${SRC}/app/script/console_delegate.cpp
   ${SRC}/app/script/script_menu.cpp
   ${SRC}/app/send_crash.cpp
   ${SRC}/app/shade.cpp
@@ -678,8 +669,6 @@ set(SRC_FILES
   ${SRC}/render/quantization.cpp
   ${SRC}/render/render.cpp
   ${SRC}/render/zoom.cpp
-  ${SRC}/script/cout_delegate.cpp
-  ${SRC}/script/duktape/engine.cpp
   ${SRC}/she/common/freetype_font.cpp
   ${SRC}/she/sdl2/sdl2_display.cpp
   ${SRC}/she/sdl2/sdl2_surface.cpp
@@ -755,11 +744,10 @@ target_link_libraries( # Specifies the target library.
                         giflib
                         tinyxml2
                         ${curl}
-                        ${V8}
-                        ${UV}
                         ${log-lib}
                         ${android-lib}
                         pixman
                         modp_b64
                         simpleini
+                        delta
                       )
