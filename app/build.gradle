@@ -11,6 +11,13 @@ android {
         applicationId = 'io.github.libresprite'
         minSdkVersion 21
         targetSdkVersion 35
+        externalNativeBuild {
+            cmake {
+                // The bundled sub-projects (SDL2, pixman, simpleini, ...) declare
+                // a cmake_minimum_required below 3.5, which CMake 4.x refuses.
+                arguments "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+            }
+        }
     }
 
     productFlavors {
