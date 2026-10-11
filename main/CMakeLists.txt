@@ -430,6 +430,8 @@ set(SRC_FILES
   ${SRC}/app/script/api/dialog_script.cpp
   ${SRC}/app/script/api/document_script.cpp
   ${SRC}/app/script/api/entry_script.cpp
+  ${SRC}/app/script/api/http_internal.cpp
+  ${SRC}/app/script/api/http_script.cpp
   ${SRC}/app/script/api/image_script.cpp
   ${SRC}/app/script/api/imageview_script.cpp
   ${SRC}/app/script/api/intentry_script.cpp
@@ -753,4 +755,5 @@ target_link_libraries( # Specifies the target library.
                         modp_b64
                         simpleini
                         delta
+                        httplib
                       )
