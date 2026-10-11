@@ -16,8 +16,6 @@ set(MODP_B64_DIR        ${CMAKE_SOURCE_DIR}/../../third_party/modp_b64)
 set(QOI_DIR             ${CMAKE_SOURCE_DIR}/../../third_party/qoi)
 set(OBSERVABLE_DIR      ${CMAKE_SOURCE_DIR}/../../third_party/observable)
 
-set(curl "-L${CMAKE_CURRENT_SOURCE_DIR}/../curl/${CMAKE_ANDROID_ARCH_ABI}" "-lcurl")
-
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2/include
         # SDL_internal.h is located in src required by SDL_android_main.c bridge
@@ -40,7 +38,6 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../pixman/pixman
         ${CMAKE_CURRENT_SOURCE_DIR}/../pixman
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/../curl/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../../
         ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party
         ${SIMPLEINI_DIR}
@@ -667,8 +664,6 @@ set(SRC_FILES
   ${SRC}/gfx/region.cpp
   ${SRC}/gfx/rgb.cpp
   ${SRC}/main/main.cpp
-  ${SRC}/net/http_request.cpp
-  ${SRC}/net/http_response.cpp
   ${OBSERVABLE_DIR}/obs/connection.cpp
   ${SRC}/render/get_sprite_pixel.cpp
   ${SRC}/render/quantization.cpp
@@ -748,7 +743,6 @@ target_link_libraries( # Specifies the target library.
                         SDL2_ttf
                         giflib
                         tinyxml2
-                        ${curl}
                         ${log-lib}
                         ${android-lib}
                         pixman
