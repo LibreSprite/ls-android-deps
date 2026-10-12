@@ -34,9 +34,9 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml2
-        ${CMAKE_CURRENT_SOURCE_DIR}/../pixman/pixman
-        ${CMAKE_CURRENT_SOURCE_DIR}/../pixman
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tinyxml2
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/pixman/pixman
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/pixman
 
         ${CMAKE_CURRENT_SOURCE_DIR}/../../
         ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party
@@ -53,8 +53,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/ ${CMAKE_CURRENT_SOUR
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2_ttf/)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../giflib/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/giflib/)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/ ${CMAKE_CURRENT_SOURCE_DIR}/../../${CMAKE_ANDROID_ARCH_ABI}/third_party/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../tinyxml2 ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/tinyxml2/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../pixman/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/pixman/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tinyxml2 ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/tinyxml2/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/pixman/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/pixman/)
 
 find_library( # Sets the name of the path variable.
               log-lib
