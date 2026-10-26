@@ -8,7 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_definitions(-DANDROID -DHAVE_CONFIG_H)
 set(ANDROID on)
 
-set(USE_SDL2_BACKEND on)
+set(USE_SDL2_BACKEND off)
+set(USE_SDL3_BACKEND on)
 
 set(LOADPNG_DIR         ${CMAKE_SOURCE_DIR}/../../third_party/loadpng)
 set(SIMPLEINI_DIR       ${CMAKE_SOURCE_DIR}/../../third_party/simpleini)
@@ -16,6 +17,7 @@ set(MODP_B64_DIR        ${CMAKE_SOURCE_DIR}/../../third_party/modp_b64)
 set(QOI_DIR             ${CMAKE_SOURCE_DIR}/../../third_party/qoi)
 set(OBSERVABLE_DIR      ${CMAKE_SOURCE_DIR}/../../third_party/observable)
 
+if(USE_SDL2_BACKEND)
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL2/include
         # SDL_internal.h is located in src required by SDL_android_main.c bridge
@@ -55,6 +57,63 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../giflib/ ${CMAKE_CURRENT_SOURCE_D
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/ ${CMAKE_CURRENT_SOURCE_DIR}/../../${CMAKE_ANDROID_ARCH_ABI}/third_party/)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tinyxml2 ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/tinyxml2/)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/pixman/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/pixman/)
+endif()
+
+if(USE_SDL3_BACKEND)
+
+set(CMAKE_PRECOMPILE_HEADERS OFF)
+set(SDL_SHARED ON)
+set(SDL_STATIC OFF)
+set(SDL_TEST_LIBRARY OFF)
+set(SDL_TESTS OFF)
+set(SDL_EXAMPLES OFF)
+set(SDL_INSTALL OFF)
+set(SDL_ANDROID_JAR OFF)
+
+set(SDLIMAGE_BUILD_EXAMPLES OFF) 
+set(SDLIMAGE_BUILD_TESTS OFF)
+set(SDLIMAGE_BUILD_TOOLS OFF)
+set(SDLIMAGE_BUILD_INSTALLABLE OFF)
+set(SDLIMAGE_VENDORED OFF)
+set(SDLIMAGE_PNG_LIBPNG OFF)
+set(SDLIMAGE_DEPS_SHARED OFF)
+
+include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL3/include
+        # SDL_internal.h is located in src required by SDL_android_main.c bridge
+        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL3/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL3/include
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL3_image/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL3_image/include
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/tinyxml2
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/pixman/pixman
+        ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/pixman
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tinyxml2
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/pixman/pixman
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/pixman
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party
+        ${SIMPLEINI_DIR}
+        ${MODP_B64_DIR}
+        ${QOI_DIR}
+        ${OBSERVABLE_DIR}
+)
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL3/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL3/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL3_image/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL3_image/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL_jpeg/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL_jpeg/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL_png/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/SDL_png/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../freetype/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/freetype/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../giflib/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/giflib/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/ ${CMAKE_CURRENT_SOURCE_DIR}/../../${CMAKE_ANDROID_ARCH_ABI}/third_party/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tinyxml2 ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/tinyxml2/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/pixman/ ${CMAKE_CURRENT_SOURCE_DIR}/../${CMAKE_ANDROID_ARCH_ABI}/pixman/)
+endif()
+
 
 find_library( # Sets the name of the path variable.
               log-lib
@@ -77,8 +136,8 @@ include_directories(
   ${OBSERVABLE_DIR}
   ${GENSRC}/app
   ${CMAKE_CURRENT_SOURCE_DIR}/../freetype/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_png/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_jpeg/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../SDL_png/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../SDL_jpeg/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../giflib/
 )
 
@@ -673,9 +732,6 @@ set(SRC_FILES
   ${SRC}/render/render.cpp
   ${SRC}/render/zoom.cpp
   ${SRC}/she/common/freetype_font.cpp
-  ${SRC}/she/sdl2/sdl2_display.cpp
-  ${SRC}/she/sdl2/sdl2_surface.cpp
-  ${SRC}/she/sdl2/she.cpp
   ${SRC}/ui/accelerator.cpp
   ${SRC}/ui/alert.cpp
   ${SRC}/ui/box.cpp
@@ -724,6 +780,8 @@ set(SRC_FILES
   ${SRC}/undo/undo_history.cpp
 )
 
+
+if(USE_SDL2_BACKEND)
 add_library(
         main-lib
 
@@ -731,6 +789,9 @@ add_library(
 
         src/SDL_android_main.c
         src/extractAssets.cpp
+        ${SRC}/she/sdl2/sdl2_display.cpp
+        ${SRC}/she/sdl2/sdl2_surface.cpp
+        ${SRC}/she/sdl2/she.cpp
         ${SRC_FILES}
 )
 
@@ -754,3 +815,41 @@ target_link_libraries( # Specifies the target library.
                         delta
                         httplib
                       )
+endif()
+
+if(USE_SDL3_BACKEND)
+add_library(
+        main-lib
+
+        SHARED
+
+        src/SDL3_android_main.c
+	    src/SDL3_extractAssets.cpp
+
+        ${SRC}/she/sdl3/sdl3_display.cpp
+        ${SRC}/she/sdl3/sdl3_surface.cpp
+        ${SRC}/she/sdl3/she.cpp
+        ${SRC_FILES}
+)
+
+target_compile_options(main-lib PRIVATE -Wno-switch)
+
+target_link_libraries( # Specifies the target library.
+                        main-lib
+                        -landroid
+			SDL3::SDL3
+                        SDL3_image::SDL3_image
+			SDL_jpeg
+			SDL_png
+                        giflib
+			freetype
+                        tinyxml2
+                        ${log-lib}
+                        ${android-lib}
+                        pixman
+                        modp_b64
+                        simpleini
+                        delta
+                        httplib
+                      )
+endif()

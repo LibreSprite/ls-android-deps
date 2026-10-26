@@ -3,7 +3,9 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 android {
-    namespace 'rocks.georgik.sdlapp'
+//    idk how to do stuff with android, sorry!
+//    namespace 'rocks.georgik.sdlapp' //for SDL2
+    namespace 'org.libsdl.app' //for SDL3
     compileSdkVersion = 35
     version = '1.2-dev'
 

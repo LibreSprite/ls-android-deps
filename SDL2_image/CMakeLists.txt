@@ -35,14 +35,14 @@ find_library(
 
 include_directories(
         include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_png/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_jpeg/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL_png/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL_jpeg/include
 )
 
 add_definitions(-DGL_GLEXT_PROTOTYPES -DLOAD_XPM -DLOAD_PNG -DLOAD_JPG)
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_png/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_png/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_jpeg/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_jpeg/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL_png/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL_png/)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL_jpeg/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL_jpeg/)
 
 add_library( # Sets the name of the library.
         SDL2_image
@@ -75,8 +75,8 @@ add_library( # Sets the name of the library.
 
 target_link_libraries(
         SDL2_image
-        SDL2_png
-        SDL2_jpeg
+        SDL_png
+        SDL_jpeg
         SDL2
         GLESv1_CM
         GLESv2

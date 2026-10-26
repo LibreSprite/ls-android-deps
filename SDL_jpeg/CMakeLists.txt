@@ -4,7 +4,7 @@
 # Sets the minimum version of CMake required to build the native library.
 
 cmake_minimum_required(VERSION 4.1)
-project(SDL2_jpeg)
+project(SDL_jpeg)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -43,7 +43,7 @@ include_directories(include)
 add_definitions(-DGL_GLEXT_PROTOTYPES)
 
 add_library( # Sets the name of the library.
-        SDL2_jpeg
+        SDL_jpeg
 
         # Sets the library as a shared library.
         SHARED
@@ -113,11 +113,25 @@ add_library( # Sets the name of the library.
 
 
 target_link_libraries(
-        SDL2_jpeg
-        SDL2
+        SDL_jpeg
         GLESv1_CM
         GLESv2
         android
         z
         log
 )
+
+# will leave ts like that in case i find out how to make the rest work with both sdl2 and sdl3
+if(USE_SDL3_BACKEND)
+        target_link_libraries(
+                SDL_jpeg
+                SDL3::SDL3
+        )
+endif()
+
+if(USE_SDL2_BACKEND)
+        target_link_libraries(
+                SDL_jpeg
+                SDL2
+        )
+endif()
