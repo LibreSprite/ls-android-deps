@@ -212,6 +212,7 @@ set(SRC_FILES
   ${SRC}/app/cmd/set_layer_opacity.cpp
   ${SRC}/app/cmd/set_mask.cpp
   ${SRC}/app/cmd/set_mask_position.cpp
+  ${SRC}/app/cmd/set_pixel.cpp
   ${SRC}/app/cmd/set_palette.cpp
   ${SRC}/app/cmd/set_pixel_format.cpp
   ${SRC}/app/cmd/set_sprite_size.cpp
@@ -393,6 +394,7 @@ set(SRC_FILES
   ${SRC}/app/file/png_format.cpp
   ${SRC}/app/file/qoi_format.cpp
   ${SRC}/app/file/she_format.cpp
+  ${SRC}/app/file/script_file_format.cpp
   ${SRC}/app/file/split_filename.cpp
   ${SRC}/app/file/tga_format.cpp
   ${SRC}/app/file_selector.cpp
@@ -420,6 +422,7 @@ set(SRC_FILES
   ${SRC}/app/resource_finder.cpp
   ${SRC}/app/script/api/app_script.cpp
   ${SRC}/app/script/api/button_script.cpp
+  ${SRC}/app/script/api/child_process_script.cpp
   ${SRC}/app/script/api/cel_script.cpp
   ${SRC}/app/script/api/colormode_script.cpp
   ${SRC}/app/script/api/console_script.cpp
@@ -427,6 +430,15 @@ set(SRC_FILES
   ${SRC}/app/script/api/dialog_script.cpp
   ${SRC}/app/script/api/document_script.cpp
   ${SRC}/app/script/api/entry_script.cpp
+  ${SRC}/app/script/api/checkbox_script.cpp
+  ${SRC}/app/script/api/colorbutton_script.cpp
+  ${SRC}/app/script/api/dropdown_script.cpp
+  ${SRC}/app/script/api/file_script.cpp
+  ${SRC}/app/script/api/linklabel_script.cpp
+  ${SRC}/app/script/api/listbox_script.cpp
+  ${SRC}/app/script/api/slider_script.cpp
+  ${SRC}/app/script/api/textbox_script.cpp
+  ${SRC}/app/script/api/tools_script.cpp
   ${SRC}/app/script/api/filesystem_script.cpp
   ${SRC}/app/script/api/http_internal.cpp
   ${SRC}/app/script/api/http_script.cpp
@@ -439,6 +451,7 @@ set(SRC_FILES
   ${SRC}/app/script/api/palettelistbox_script.cpp
   ${SRC}/app/script/api/pixelcolor_script.cpp
   ${SRC}/app/script/api/selection_script.cpp
+  ${SRC}/app/script/api/server_script.cpp
   ${SRC}/app/script/api/sprite_script.cpp
   ${SRC}/app/script/api/storage_internal.cpp
   ${SRC}/app/script/api/timer_script.cpp
@@ -461,6 +474,8 @@ set(SRC_FILES
   ${SRC}/app/tools/symmetry.cpp
   ${SRC}/app/tools/tool_box.cpp
   ${SRC}/app/tools/tool_loop_manager.cpp
+  ${SRC}/app/tools/script_tool_driver.cpp
+  ${SRC}/app/tools/script_tool_loop.cpp
   ${SRC}/app/transaction.cpp
   ${SRC}/app/transformation.cpp
   ${SRC}/app/ui/ani_controls.cpp
